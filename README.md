@@ -7,3 +7,4 @@ https://github.com/jatinchanana/Content-Based-Retrieval-System/blob/master/Proje
 https://www.kaggle.com/jessicali9530/caltech256
 
 https://docs.opencv.org/3.4/d8/dc8/tutorial_histogram_comparison.html
+https://www.pyimagesearch.com/2014/07/14/3-ways-compare-histograms-using-opencv-python/
