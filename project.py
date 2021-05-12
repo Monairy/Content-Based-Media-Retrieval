@@ -73,7 +73,7 @@ def DrawCBIR():
     buttonGlobalColor.place(x=origx+600, y=origy+160)
     
     buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBIR_alg, value=3, bg="#d2d2d2", font=("Arial", 14))
-    buttonColorLayout.place(x=origx+780, y=origy+160)
+    buttonColorLayout.place(x=origx+750, y=origy+160)
 
     ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: ChooseCBIR_Algo())
     ButtonFindMatches.configure(height=2, width=16)
@@ -101,6 +101,7 @@ def SelectQueryImg():
         QueryImgPath.delete('1.0', END)
         QueryImgPath.insert(END,queryimgpath )
         
+        
 def ChooseCBIR_Algo():
    if(CBIR_alg.get()==1):
        FindMatches_Histo()
@@ -108,9 +109,10 @@ def ChooseCBIR_Algo():
        FindMatches_Global()
    if(CBIR_alg.get()==3):
        FindMatches_Layout()
+   else:
+       ShowError("Please Choose Algorithm!")
     
 def FindMatches_Histo():
-
 
   imagespath='images/'
   images= os.listdir(imagespath)
@@ -137,13 +139,13 @@ def FindMatches_Global():
    images= os.listdir(imagespath)
    queryimg = cv2.imread(queryimgpath)
    
-   globalquery=get_global_color(queryimg)
+   globalquery=CBIR.get_global_color(queryimg)
 
    dictofresult={}
 
    for image in images:
      image2=cv2.imread(imagespath+image)
-     globalimage=get_global_color(image2)
+     globalimage=CBIR.get_global_color(image2)
      
      Bdiff=abs(globalquery[0]-globalimage[0])
      Gdiff=abs(globalquery[1]-globalimage[1])
@@ -162,13 +164,13 @@ def FindMatches_Layout():
    images= os.listdir(imagespath)
    queryimg = cv2.imread(queryimgpath)
    
-   bq,gq,rq=get_color_layout(queryimg)
+   bq,gq,rq=CBIR.get_color_layout(queryimg)
 
    dictofresult={}
 
    for image in images:
        image2=cv2.imread(imagespath+image)
-       bi,gi,ri=get_color_layout(image2)
+       bi,gi,ri=CBIR.get_color_layout(image2)
        
        bdiff=np.abs(bq-bi)
        gdiff=np.abs(gq-gi)
@@ -197,8 +199,6 @@ def FindMatches_Layout():
 
 
 
-
-
    
 def ImgBrowser(resultimages):
 
@@ -214,9 +214,7 @@ def ImgBrowser(resultimages):
      # Create a frame for the canvas and scrollbar(s).
         frame2 = Frame(master_frame,width=1320,height=700)
         frame2.grid(row=3, column=0, sticky=NW)
-
         
-
         # Add a canvas in that frame.
         canvas = Canvas(frame2, bg="#d2d2d2")
         canvas.grid(row=0, column=0)
@@ -235,13 +233,11 @@ def ImgBrowser(resultimages):
         col=0
         images=list(resultimages.keys())
 
-        #print(images)
         images.reverse()
-        #print(images[1])
 
         
         lenn=len(images)
-       # print(lenn)
+        
         LABEL_BG = "#ccc"  # Light gray.
         ROWS, COLS = int(lenn/4)+1, 4  # Size of grid.
         ROWS_DISP = 3  # Number of rows to display.
@@ -300,15 +296,15 @@ class CBIR:
    return(num/den)
 
 
-def get_global_color(img):
+ def get_global_color(img):
   # return avgerage color of image
-  myimg = img
-  avg_color_per_row = np.average(myimg, axis=0)
-  avg_color = np.average(avg_color_per_row, axis=0)
-  return avg_color
+    myimg = img
+    avg_color_per_row = np.average(myimg, axis=0)
+    avg_color = np.average(avg_color_per_row, axis=0)
+    return avg_color
 
 
-def get_color_layout(img):
+ def get_color_layout(img):
     # resize image to 500x500 then divide it into 50x50 pixels total of 10x10 grids
     myimg = img
     grid = 50
