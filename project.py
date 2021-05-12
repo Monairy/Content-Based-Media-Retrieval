@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from PIL import ImageTk, Image
 from tkinter import filedialog
 import os
+import shutil
 
 
 ####################################
@@ -78,11 +79,11 @@ def DrawCBIR():
 
 def SelectQueryImg(): 
     error = 0
-    global queryimg
-    queryimg = filedialog.askopenfilenames()
-    queryimg=queryimg[0]
+    global queryimgpath
+    queryimgpath = filedialog.askopenfilenames()
+    queryimgpath=queryimgpath[0]
     
-    im = Image.open(queryimg).resize((300, 300))
+    im = Image.open(queryimgpath).resize((300, 300))
     ph = ImageTk.PhotoImage(im)
     
     labelimg = Label(GUI,image=ph)
@@ -91,13 +92,43 @@ def SelectQueryImg():
     ButtonFindMatches.place(x=origx+90, y=origy+600)
 
     if (error == 0):
-        QueryImgPath.insert(END,queryimg )
+        QueryImgPath.delete('1.0', END)
+        QueryImgPath.insert(END,queryimgpath )
+        
 
 def FindMatches():
-  ImgBrowser()
 
 
-def ImgBrowser():
+  a=CBIR(HistoBins=10)
+
+  imagespath='images/'
+  images= os.listdir(imagespath)
+  queryimg = cv2.imread(queryimgpath)
+  try:
+        shutil.rmtree('results')
+  except OSError as e:
+      print("Error: %s" % (e.strerror))
+
+  os.mkdir('results')
+
+
+  dictofresult={}
+  
+  for image in images:
+    image2=cv2.imread(imagespath+image)
+    a=CBIR(HistoBins=10)
+    distance=a.compareHist(queryimg,image2)
+    
+    if(distance>0.22):
+        dictofresult[image]=distance
+        
+       # cv2.imwrite('results/'+image, image2)
+        
+  resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )    
+  ImgBrowser(resultimages)
+
+
+def ImgBrowser(resultimages):
 
 
         global imgbrowser
@@ -116,7 +147,7 @@ def ImgBrowser():
         
 
         # Add a canvas in that frame.
-        canvas = Canvas(frame2, bg="Yellow")
+        canvas = Canvas(frame2, bg="#d2d2d2")
         canvas.grid(row=0, column=0)
 
         # Create a vertical scrollbar linked to the canvas.
@@ -131,16 +162,21 @@ def ImgBrowser():
         # Add the images to the frame.
         r=1
         col=0
-        images=os.listdir('images')
+        images=list(resultimages.keys())
+
+        #print(images)
+        images.reverse()
+        #print(images[1])
 
         
-        lenn=20
+        lenn=len(images)
+       # print(lenn)
         LABEL_BG = "#ccc"  # Light gray.
         ROWS, COLS = int(lenn/4)+1, 4  # Size of grid.
         ROWS_DISP = 3  # Number of rows to display.
         COLS_DISP = 4  # Number of columns to display
         
-        for number in range(lenn):
+        for number in range(0,lenn):
       
           filename = "images/"+images[number]
   
@@ -171,6 +207,31 @@ def ImgBrowser():
         
         imgbrowser.mainloop()
 
+
+import numpy as np
+import cv2
+import os
+
+
+class CBIR:
+
+ histbins=8
+
+ def __init__(self, HistoBins=8):
+        self.histbins = HistoBins
+        
+ def compareHist(self,queryimg,modelimg):
+
+   hist1= cv2.calcHist([queryimg],[0,1,2],None,[self.histbins,self.histbins,self.histbins],[0, 256, 0, 256, 0, 256])
+   hist1 =cv2.normalize(hist1,hist1)
+
+   hist2  = cv2.calcHist([modelimg],[0,1,2],None,[self.histbins,self.histbins,self.histbins],[0, 256, 0, 256, 0, 256])
+   hist2  = cv2.normalize(hist2,hist2)
+
+   num = cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT)
+   den=sum(hist2.flatten())
+
+   return(num/den)
 
 
 
