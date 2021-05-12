@@ -5,6 +5,8 @@ from PIL import ImageTk, Image
 from tkinter import filedialog
 import os
 import shutil
+import cv2 as cv2
+import numpy as np
 
 
 ####################################
@@ -69,7 +71,7 @@ def DrawCBIR():
     buttonBestFit = Radiobutton(GUI, text="ay 7aga", variable=Type, value=2, bg="#d2d2d2", font=("Arial", 14))
     buttonBestFit.place(x=origx+650, y=origy+160)
 
-    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: FindMatches())
+    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: FindMatches_Layout())
     ButtonFindMatches.configure(height=2, width=16)
 
 
@@ -96,21 +98,14 @@ def SelectQueryImg():
         QueryImgPath.insert(END,queryimgpath )
         
 
-def FindMatches():
+def FindMatches_Histo():
 
-
-  a=CBIR(HistoBins=10)
 
   imagespath='images/'
   images= os.listdir(imagespath)
   queryimg = cv2.imread(queryimgpath)
-  try:
-        shutil.rmtree('results')
-  except OSError as e:
-      print("Error: %s" % (e.strerror))
-
-  os.mkdir('results')
-
+  
+  a=CBIR(HistoBins=10)
 
   dictofresult={}
   
@@ -121,15 +116,76 @@ def FindMatches():
     
     if(distance>0.22):
         dictofresult[image]=distance
-        
-       # cv2.imwrite('results/'+image, image2)
-        
+                
   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )    
   ImgBrowser(resultimages)
 
 
-def ImgBrowser(resultimages):
+def FindMatches_Global():
+   imagespath='images/'
+   images= os.listdir(imagespath)
+   queryimg = cv2.imread(queryimgpath)
+   
+   globalquery=get_global_color(queryimg)
 
+   dictofresult={}
+
+   for image in images:
+     image2=cv2.imread(imagespath+image)
+     globalimage=get_global_color(image2)
+     
+     Bdiff=abs(globalquery[0]-globalimage[0])
+     Gdiff=abs(globalquery[1]-globalimage[1])
+     Rdiff=abs(globalquery[2]-globalimage[2])
+     #print(image,Bdiff,Gdiff,Rdiff)
+     if(Bdiff<30 and Gdiff<30 and Rdiff<30):
+     #   print(image)
+        dictofresult[image]=1
+
+   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )    
+   #print(resultimages)
+   ImgBrowser(resultimages)
+
+def FindMatches_Layout():
+   imagespath='images/'
+   images= os.listdir(imagespath)
+   queryimg = cv2.imread(queryimgpath)
+   
+   bq,gq,rq=get_color_layout(queryimg)
+
+   dictofresult={}
+
+   for image in images:
+       image2=cv2.imread(imagespath+image)
+       bi,gi,ri=get_color_layout(image2)
+       
+       bdiff=np.abs(bq-bi)
+       gdiff=np.abs(gq-gi)
+       rdiff=np.abs(rq-ri)
+       
+       bdiff[bdiff<30]=1
+       bdiff[bdiff>=30]=0
+       
+       gdiff[gdiff<30]=1
+       gdiff[gdiff>=30]=0
+       
+       rdiff[rdiff<30]=1
+       rdiff[rdiff>=30]=0
+       
+
+       bluehit=np.sum(bdiff)
+       greenhit=np.sum(gdiff)
+       redhit=np.sum(rdiff)
+  
+       if(bluehit>20 and greenhit>20 and redhit>20):
+          dictofresult[image]=1
+
+   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )
+   
+   ImgBrowser(resultimages)
+
+   
+def ImgBrowser(resultimages):
 
         global imgbrowser
         imgbrowser = Toplevel(GUI)
@@ -208,15 +264,10 @@ def ImgBrowser(resultimages):
         imgbrowser.mainloop()
 
 
-import numpy as np
-import cv2
-import os
-
 
 class CBIR:
 
  histbins=8
-
  def __init__(self, HistoBins=8):
         self.histbins = HistoBins
         
@@ -233,6 +284,34 @@ class CBIR:
 
    return(num/den)
 
+
+def get_global_color(img):
+  # return avgerage color of image
+  myimg = img
+  avg_color_per_row = np.average(myimg, axis=0)
+  avg_color = np.average(avg_color_per_row, axis=0)
+  return avg_color
+
+
+def get_color_layout(img):
+    # resize image to 500x500 then divide it into 50x50 pixels total of 10x10 grids
+    myimg = img
+    grid = 50
+
+    new_size = cv2.resize(myimg,(500,500))
+
+    blue = np.zeros((10,10))
+    green = np.zeros((10,10))
+    red = np.zeros((10,10))
+    res1 = new_size.shape[0] // 50
+    res2 = new_size.shape[1] //50
+    for i in range(res1):
+        for j in range(res2):
+            blue[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,0])
+            green[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,1])
+            red[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,2])
+
+    return blue,green,red
 
 
 ######################################
