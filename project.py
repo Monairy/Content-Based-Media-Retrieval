@@ -79,8 +79,6 @@ def DrawCBIR():
 
 
     labelthres = Label(GUI, text="Set Threshold:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
-    labelthres.place(x=origx+500, y=origy+250)
-    
     
 
     global note
@@ -116,7 +114,8 @@ def AutoThres():
        slider.set(20)
        note.set('number of matching sub blocks')
 
-       
+   labelthres.place(x=origx+500, y=origy+250)
+   
    slider.place(x=origx+540, y=origy+290)
 
 
