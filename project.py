@@ -51,7 +51,9 @@ def is_number(s):
 def DrawCBIR():
     DestroyMain()
 
-    global ButtonFindMatches,origx,origy
+    global labelalg,labelthres,labelnote
+    global ButtonFindMatches
+    global origx,origy
     global QueryImgPath
     origx=0
     origy=-70
@@ -63,26 +65,62 @@ def DrawCBIR():
     
     global CBIR_alg
     CBIR_alg = IntVar()
-    label1 = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
-    label1.place(x=origx+500, y=origy+120)
+    labelalg = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
+    labelalg.place(x=origx+500, y=origy+120)
     
-    buttonHistoSim = Radiobutton(GUI, text="Color Histogram", variable=CBIR_alg, value=1, bg="#d2d2d2", font=("Arial", 14))
+    buttonHistoSim = Radiobutton(GUI, text="Color Histogram", variable=CBIR_alg, value=1, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
     buttonHistoSim.place(x=origx+400, y=origy+160)
     
-    buttonGlobalColor = Radiobutton(GUI, text="Mean Color", variable=CBIR_alg, value=2, bg="#d2d2d2", font=("Arial", 14))
+    buttonGlobalColor = Radiobutton(GUI, text="Mean Color", variable=CBIR_alg, value=2, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
     buttonGlobalColor.place(x=origx+600, y=origy+160)
     
-    buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBIR_alg, value=3, bg="#d2d2d2", font=("Arial", 14))
+    buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBIR_alg, value=3, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
     buttonColorLayout.place(x=origx+750, y=origy+160)
+
+
+    labelthres = Label(GUI, text="Set Threshold:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
+    labelthres.place(x=origx+500, y=origy+250)
+    
+    
+
+    global note
+    note=StringVar()
+
+    
+    labelnote= Label(GUI,textvariable=note,bg="#d2d2d2",fg="red",font=("Times", 14))
+    labelnote.place(x=origx+650,y=origy+300)
+
+    
+    QueryImgPath = Text(GUI, height=2, width=40)
+    QueryImgPath.place(x=5, y=110)
+
 
     ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: ChooseCBIR_Algo())
     ButtonFindMatches.configure(height=2, width=16)
 
 
-    QueryImgPath = Text(GUI, height=2, width=40)
-    QueryImgPath.place(x=5, y=110)
+def AutoThres():
+   global slider 
+   if(CBIR_alg.get()==1):
+       slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)
+       slider.set(22)
+       note.set('minimum distance')
+
+   if(CBIR_alg.get()==2):
+       slider=Scale(GUI,from_=0,to=255,orient=HORIZONTAL)       
+       slider.set(30)
+       note.set('mean color difference')
+       
+   if(CBIR_alg.get()==3):
+       slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
+       slider.set(20)
+       note.set('number of matching sub blocks')
+
+       
+   slider.place(x=origx+540, y=origy+290)
 
 
+    
 def SelectQueryImg(): 
     error = 0
     global queryimgpath
@@ -121,13 +159,14 @@ def FindMatches_Histo():
   a=CBIR(HistoBins=10)
 
   dictofresult={}
-  
+
+  thres=slider.get()
   for image in images:
     image2=cv2.imread(imagespath+image)
     a=CBIR(HistoBins=10)
     distance=a.compareHist(queryimg,image2)
     
-    if(distance>0.22):
+    if(distance>(thres/100)):
         dictofresult[image]=distance
                 
   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )    
@@ -142,6 +181,8 @@ def FindMatches_Global():
    globalquery=CBIR.get_global_color(queryimg)
 
    dictofresult={}
+   
+   thres=slider.get()
 
    for image in images:
      image2=cv2.imread(imagespath+image)
@@ -150,14 +191,14 @@ def FindMatches_Global():
      Bdiff=abs(globalquery[0]-globalimage[0])
      Gdiff=abs(globalquery[1]-globalimage[1])
      Rdiff=abs(globalquery[2]-globalimage[2])
-     #print(image,Bdiff,Gdiff,Rdiff)
-     if(Bdiff<30 and Gdiff<30 and Rdiff<30):
-     #   print(image)
+     
+     if(Bdiff<=thres and Gdiff<=thres and Rdiff<=thres):
         dictofresult[image]=1
 
+
    resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )    
-   #print(resultimages)
    ImgBrowser(resultimages)
+
 
 def FindMatches_Layout():
    imagespath='images/'
@@ -168,6 +209,9 @@ def FindMatches_Layout():
 
    dictofresult={}
 
+
+   thres=slider.get()
+   
    for image in images:
        image2=cv2.imread(imagespath+image)
        bi,gi,ri=CBIR.get_color_layout(image2)
@@ -190,11 +234,10 @@ def FindMatches_Layout():
        greenhit=np.sum(gdiff)
        redhit=np.sum(rdiff)
   
-       if(bluehit>20 and greenhit>20 and redhit>20):
-          dictofresult[image]=1
+       if(bluehit>=thres and greenhit>=thres and redhit>=thres):
+          dictofresult[image]=bluehit+greenhit+redhit
 
-   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )
-   
+   resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )   
    ImgBrowser(resultimages)
 
 
@@ -204,7 +247,7 @@ def ImgBrowser(resultimages):
 
         global imgbrowser
         imgbrowser = Toplevel(GUI)
-        imgbrowser.geometry("850x600")
+        imgbrowser.geometry("850x620")
 
 
         master_frame = Frame(imgbrowser, bg="Light Blue", bd=1, relief=RIDGE)
@@ -265,11 +308,13 @@ def ImgBrowser(resultimages):
 
         buttons_frame.update_idletasks()  # Needed to make bbox info available.
         bbox = canvas.bbox(ALL)  # Get bounding box of canvas with Buttons.
-
+        #print(bbox)
         # Define the scrollable region as entire canvas with only the desired
         # number of rows and columns displayed.
         w, h = bbox[2]-bbox[1], bbox[3]-bbox[1]
         dw, dh = int((w/COLS) * COLS_DISP), int((h/ROWS) * ROWS_DISP)
+        dw,dh=816,612
+       
         canvas.configure(scrollregion=bbox, width=dw, height=dh)
         
         imgbrowser.mainloop()
