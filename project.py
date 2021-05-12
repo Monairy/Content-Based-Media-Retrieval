@@ -61,17 +61,21 @@ def DrawCBIR():
     ButtonSelectQueryImg.place(x=origx+90, y=origy+120)
     
     
-    global Type
-    Type = IntVar()
+    global CBIR_alg
+    CBIR_alg = IntVar()
     label1 = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
     label1.place(x=origx+500, y=origy+120)
     
-    buttonHistoSim = Radiobutton(GUI, text="Histogram Similarity", variable=Type, value=1, bg="#d2d2d2", font=("Arial", 14))
+    buttonHistoSim = Radiobutton(GUI, text="Color Histogram", variable=CBIR_alg, value=1, bg="#d2d2d2", font=("Arial", 14))
     buttonHistoSim.place(x=origx+400, y=origy+160)
-    buttonBestFit = Radiobutton(GUI, text="ay 7aga", variable=Type, value=2, bg="#d2d2d2", font=("Arial", 14))
-    buttonBestFit.place(x=origx+650, y=origy+160)
+    
+    buttonGlobalColor = Radiobutton(GUI, text="Mean Color", variable=CBIR_alg, value=2, bg="#d2d2d2", font=("Arial", 14))
+    buttonGlobalColor.place(x=origx+600, y=origy+160)
+    
+    buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBIR_alg, value=3, bg="#d2d2d2", font=("Arial", 14))
+    buttonColorLayout.place(x=origx+780, y=origy+160)
 
-    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: FindMatches_Layout())
+    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: ChooseCBIR_Algo())
     ButtonFindMatches.configure(height=2, width=16)
 
 
@@ -97,7 +101,14 @@ def SelectQueryImg():
         QueryImgPath.delete('1.0', END)
         QueryImgPath.insert(END,queryimgpath )
         
-
+def ChooseCBIR_Algo():
+   if(CBIR_alg.get()==1):
+       FindMatches_Histo()
+   if(CBIR_alg.get()==2):
+       FindMatches_Global()
+   if(CBIR_alg.get()==3):
+       FindMatches_Layout()
+    
 def FindMatches_Histo():
 
 
@@ -183,6 +194,10 @@ def FindMatches_Layout():
    resultimages=dict(sorted(dictofresult.items(), key=lambda item: item[1]) )
    
    ImgBrowser(resultimages)
+
+
+
+
 
    
 def ImgBrowser(resultimages):
