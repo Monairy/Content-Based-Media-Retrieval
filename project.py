@@ -10,8 +10,6 @@ import numpy as np
 import pickle
 
 
-
-
 class ImgFeaturesDatabase:
 
   HistoFeaturesDB='HistogramFeatures.db'
@@ -103,7 +101,6 @@ class CBIR:
  def compareHist(self,queryimghist,modelimghist):
    num = cv2.compareHist(queryimghist, modelimghist, cv2.HISTCMP_INTERSECT)
    den=sum(modelimghist.flatten())
-
    return(num/den)
 
 
@@ -119,9 +116,7 @@ class CBIR:
     # resize image to 500x500 then divide it into 50x50 pixels total of 10x10 grids
     myimg = img
     grid = 50
-
     new_size = cv2.resize(myimg,(500,500))
-
     blue = np.zeros((10,10))
     green = np.zeros((10,10))
     red = np.zeros((10,10))
@@ -160,8 +155,7 @@ class CBIR:
    ImgBrowser(resultimages)
 
 
- def FindMatches_Global():
-  
+ def FindMatches_Global():  
    queryimg = cv2.imread(queryimgpath)
    queryimgGlobalColor=CBIR.get_global_color(queryimg)
    
@@ -216,7 +210,6 @@ class CBIR:
        rdiff[rdiff<30]=1
        rdiff[rdiff>=30]=0
        
-
        bluehit=np.sum(bdiff)
        greenhit=np.sum(gdiff)
        redhit=np.sum(rdiff)
@@ -231,6 +224,7 @@ class CBIR:
 
 
 ######################################
+#################GUI##################
 ######################################
    
 def main():
@@ -277,11 +271,9 @@ def DrawCBIRScreen():
     origx=0
     origy=-70
 
-
     ButtonBack= Button(GUI, text="Back", font=("Arial", 8), command=lambda: DestroyCBIR())
     ButtonBack.configure(height=2, width=8)
     ButtonBack.place(x=origx+0, y=origy+70)
-
                 
     ButtonSelectQueryImg = Button(GUI, text="Select Query Image", font=("Arial", 12), command=lambda: SelectQueryImg())
     ButtonSelectQueryImg.configure(height=2, width=16)
@@ -293,7 +285,7 @@ def DrawCBIRScreen():
     ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: ChooseCBIR_Algo())
     ButtonFindMatches.configure(height=2, width=16)
     
-    #########################################################
+#########################################################
     global CBIR_alg
     CBIR_alg = IntVar()
     labelalg = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
@@ -317,7 +309,7 @@ def DrawCBIRScreen():
     labelslidernote= Label(GUI,textvariable=slidernote,bg="#d2d2d2",fg="red",font=("Times", 14))
     labelslidernote.place(x=origx+650,y=origy+300)
        
-################################################
+#########################################################
     ButtonIndexDB = Button(GUI, text="Index Database", font=("Arial", 12), command=lambda: SelectImagesPath())
     ButtonIndexDB.configure(height=2, width=16)
     ButtonIndexDB.place(x=origx+1050, y=origy+120)
