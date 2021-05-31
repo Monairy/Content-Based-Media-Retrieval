@@ -52,10 +52,13 @@ class ImgFeaturesDatabase:
    a=CBIR(HistoBins=10)
 
    for image in images:
-     fullimgpath=imagespath+'/'+image
+     fullimgpath=os.path.join(imagespath,image)
      img=cv2.imread(fullimgpath)
-     histogram=a.CalculateHistogram(img)
-     indexHisto[fullimgpath]=histogram
+     try:
+        histogram=a.CalculateHistogram(img)
+        indexHisto[fullimgpath]=histogram
+     except:
+       continue
      
    with open(self.HistoFeaturesDB, 'wb') as f:
     pickle.dump(indexHisto, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -67,10 +70,13 @@ class ImgFeaturesDatabase:
    indexGlobal={}
 
    for image in images:
-     fullimgpath=imagespath+'/'+image
+     fullimgpath=os.path.join(imagespath,image)
      img=cv2.imread(fullimgpath)
-     imgglobalColor=CBIR.get_global_color(img)
-     indexGlobal[fullimgpath]=imgglobalColor
+     try:
+        imgglobalColor=CBIR.get_global_color(img)
+        indexGlobal[fullimgpath]=imgglobalColor
+     except:
+       continue
      
    with open( self.GlobalColorFeaturesDB , 'wb') as f:
     pickle.dump(indexGlobal, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -81,10 +87,13 @@ class ImgFeaturesDatabase:
    indexColorLayout={}
 
    for image in images:
-     fullimgpath=imagespath+'/'+image
+     fullimgpath=os.path.join(imagespath,image)
      img=cv2.imread(fullimgpath)
-     imgcolorlayout=CBIR.get_color_layout(img)
-     indexColorLayout[fullimgpath]=imgcolorlayout
+     try:
+        imgcolorlayout=CBIR.get_color_layout(img)
+        indexColorLayout[fullimgpath]=imgcolorlayout
+     except:
+       continue
      
    with open(self.ColorLayoutFeaturesDB, 'wb') as f:
     pickle.dump(indexColorLayout, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -451,7 +460,7 @@ def DrawCBIRScreen():
     global CBIR_alg
     CBIR_alg = IntVar()
     labelalg = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
-    labelalg.place(x=origx+500, y=origy+120)
+    labelalg.place(x=origx+550, y=origy+120)
     
     buttonHistoSim = Radiobutton(GUI, text="Color Histogram", variable=CBIR_alg, value=1, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
     buttonHistoSim.place(x=origx+400, y=origy+160)
@@ -607,11 +616,16 @@ def ImgBrowser(resultimages):
         btnexport=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
         
         #r+=1
-        files=[]
+
+        
+        btnExportAll=Button(buttons_frame, text="Export All", font=("Arial", 15), command=lambda: exportAll(images))
+        btnExportAll.grid(row=0,column=0)
+
+        
         for number in range(0,lenn):
       
           filename = images[number]
-          files.append(filename)
+          #files.append(filename)
   
           if((number%4)==0 and number!=0):
             r+=2
@@ -649,10 +663,11 @@ def ImgBrowser(resultimages):
        
         canvas.configure(scrollregion=bbox, width=dw, height=dh)
         
-        btnExportAll=Button(buttons_frame, text="Export All", font=("Arial", 15), command=lambda: exportAll(files))
-        btnExportAll.grid(row=0,column=0)
+       
         
         imgbrowser.mainloop()
+
+
 
 ################################################################   
 ########################CBVR_UI#################################
@@ -699,10 +714,10 @@ def DrawCBVRScreen():
     global CBVR_alg
     CBVR_alg = IntVar()
     labelalg = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
-    labelalg.place(x=origx+500, y=origy+120)
+    labelalg.place(x=origx+550, y=origy+120)
        
     buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBVR_alg, value=3, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThresCBVR())
-    buttonColorLayout.place(x=origx+450, y=origy+160)
+    buttonColorLayout.place(x=origx+600, y=origy+160)
     
     
     labelthres = Label(GUI, text="Set Threshold:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
@@ -749,7 +764,7 @@ def AutoThresCBVR(): #ui slider
    if(CBVR_alg.get()==1):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
        slider.set(22)
-       slidernote.set('minimum distance')
+       slidernote.set('minimum similarity perentage')
 
    if(CBVR_alg.get()==2):
        slider=Scale(GUI,from_=0,to=255,orient=HORIZONTAL)       
@@ -899,8 +914,12 @@ def VidBrowser(resultVideos):
         btnopen=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
         btnexport=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
    
-        r+=1
+        #r+=1
         files=[]
+        
+        btnExportAll=Button(buttons_frame, text="Export All", font=("Arial", 15), command=lambda: exportAll(images))
+        btnExportAll.grid(row=0,column=0)
+        
         for number in range(0,lenn):
           
       
@@ -939,9 +958,7 @@ def VidBrowser(resultVideos):
         dw,dh=816,612
        
         canvas.configure(scrollregion=bbox, width=dw, height=dh)
-        
-        btnExportAll=Button(buttons_frame, text="Export All", font=("Arial", 15), command=lambda: exportAll(files))
-        btnExportAll.grid(row=0,column=0)
+      
 
         
         imgbrowser.mainloop()
