@@ -8,6 +8,9 @@ import shutil
 import cv2 as cv2
 import numpy as np
 import pickle
+from shutil import copyfile
+import subprocess
+import moviepy.editor
 
 
 class ImgFeaturesDatabase:
@@ -145,7 +148,7 @@ class CBIR:
    MatchingImages={}
   
    for image in DBimages:
-     DBimageHisto = HistoDB[image]
+     DBimageHisto = HistoDB[image] 
      distance=cbir.compareHist(queryimgHisto,DBimageHisto)
     
      if(distance>=(thres/100)):
@@ -460,24 +463,18 @@ def ImgBrowser(resultimages):
         master_frame.grid(sticky=NE)
         master_frame.columnconfigure(0, weight=1)
         
-     # Create a frame for the canvas and scrollbar(s).
         frame2 = Frame(master_frame,width=1320,height=700)
         frame2.grid(row=3, column=0, sticky=NW)
         
-        # Add a canvas in that frame.
         canvas = Canvas(frame2, bg="#d2d2d2")
         canvas.grid(row=0, column=0)
 
-        # Create a vertical scrollbar linked to the canvas.
         vsbar = Scrollbar(frame2, orient=VERTICAL, command=canvas.yview)
         vsbar.grid(row=0, column=1, sticky=NS)
         canvas.configure(yscrollcommand=vsbar.set)
 
-        # Create a frame on the canvas to contain the images.
         buttons_frame = Frame(canvas,)
-        #buttons_frame.grid_propagate(0)
         
-        # Add the images to the frame.
         r=1
         col=0
         images=list(resultimages.keys())
@@ -487,25 +484,41 @@ def ImgBrowser(resultimages):
         lenn=len(images)
         
         LABEL_BG = "#ccc"  # Light gray.
-        ROWS, COLS = int(lenn/4)+1, 4  # Size of grid.
+        ROWS, COLS = int(lenn/4)+2, 8  # Size of grid.
         ROWS_DISP = 3  # Number of rows to display.
-        COLS_DISP = 4  # Number of columns to display
+        COLS_DISP = 8  # Number of columns to display
         
+        btnopen=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
+        btnexport=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
+        
+        r+=1
+        files=[]
         for number in range(0,lenn):
       
           filename = images[number]
+          files.append(filename)
   
-          if((number%4)==0):
-            r+=1
+          if((number%4)==0 and number!=0):
+            r+=2
             col=0
+            col2=0
           
           image = ImageTk.PhotoImage(Image.open(filename).resize((200,200)))
              
           label = Label(buttons_frame,image=image)
-          label.photo = image  
-        
-          label.grid(row=r, column=col)
-          col+=1
+          label.photo = image         
+          label.grid(row=r, column=col,columnspan=2)
+          
+          path=os.path.abspath(filename) #full path
+          
+          btnopen[r][col] = Button(buttons_frame, text="Open", font=("Arial", 10), command=lambda path1=path: openFile(path1))
+          btnopen[r][col].grid(row=r+1, column=col)
+
+          btnexport[r][col] = Button(buttons_frame, text="Export", font=("Arial", 10), command=lambda path2=filename: exportAll(path2,"oneFile"))
+          btnexport[r][col].grid(row=r+1, column=col+1)
+
+          
+          col+=2
           
         # Create canvas window to hold the buttons_frame.
         canvas.create_window((0,0), window=buttons_frame, anchor=NW)
@@ -521,7 +534,12 @@ def ImgBrowser(resultimages):
        
         canvas.configure(scrollregion=bbox, width=dw, height=dh)
         
+        btnExportAll=Button(buttons_frame, text="Export All", font=("Arial", 15), command=lambda: exportAll(files))
+        btnExportAll.grid(row=0,column=0)
+        
         imgbrowser.mainloop()
+
+        
 
 
 ####################################
@@ -554,6 +572,56 @@ def is_number(s):
     except ValueError:
         return False  
 ########################################
+
+def openFile(path):
+    path2=path.replace("\\","\\\\")
+    
+    path3=path2.replace(" ","^ ")
+    
+    os.system(path3)
+    
+def readyExport():
+    if("Exports" not in os.listdir()):
+       os.mkdir("Exports")
+    try:
+     folders=os.listdir("Exports")
+     exports=["export 0"]
+     maxexport=0
+     for folder in folders:
+       if(folder.find("export")!=-1):
+          exports.append(folder)
+          num=int(folder.split()[1])
+          if( num > maxexport ):
+             maxexport=num
+    except Exception as e:
+       print(e)
+       
+    try:
+        os.mkdir("Exports\\export "+str(maxexport+1))
+        path="Exports\\export "+str(maxexport+1)        
+    except Exception as e:
+       print(e)
+       
+    return path
+              
+def exportFile(dstpath,srcpath):
+    print(srcpath)
+    
+    filename=srcpath.split("/")[-1]
+    copyfile(srcpath,os.path.join(dstpath,filename))
+    
+def exportAll(paths,mode="oneFile"):
+   dstpath=readyExport()
+     
+   paths2=[]
+   
+   if(isinstance(paths,str)):
+     paths2.append(paths)
+   else:
+     paths2=paths
+     
+   for srcpath in paths2:
+     exportFile(dstpath,srcpath)      
 
 ##########################
 ##########################
