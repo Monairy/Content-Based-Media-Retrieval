@@ -14,82 +14,59 @@ import moviepy.editor
 from Katna.video import Video
 from Katna.writer import KeyFrameDiskWriter
 
-class ImgFeaturesDatabase:
-
-  HistoFeaturesDB='HistogramFeatures.db'
-  GlobalColorFeaturesDB='GlobalColorFeatures.db'
-  ColorLayoutFeaturesDB='ColorLayoutFeatures.db'
-  
-  def __init__(self, HistoPath='HistogramFeatures.db', GlobalColorPath='GlobalColorFeatures.db',ColorLayoutPath='ColorLayoutFeatures.db'):
-        self.HistoFeaturesDB = HistoPath  
-        self.GlobalColorFeaturesDB = GlobalColorPath  
-        self.ColorLayoutFeaturesDB = ColorLayoutPath  
     
-  def LoadHistoDB(self):
-    with open(self.HistoFeaturesDB, 'rb') as f:
-       HistoDB = pickle.load(f)
-    return HistoDB
+class VidFeaturesDatabase:
 
-  def LoadGlobalColorDB(self):
-    with open(self.GlobalColorFeaturesDB, 'rb') as f:
-       GlobalColorDB = pickle.load(f)
-    return GlobalColorDB
+  ColorLayoutFeaturesDB='VidesColorLayout.DB'
+  
+  def __init__(self, ColorLayoutPath='VidesColorLayout.DB'):  
+        self.ColorLayoutFeaturesDB = ColorLayoutPath  
 
   def LoadColorLayoutDB(self):
     with open(self.ColorLayoutFeaturesDB, 'rb') as f:
        ColorLayoutDB = pickle.load(f)
     return ColorLayoutDB       
 
-  def indexDatabaseAll(self,imgpath='images/'):
-     self.indexDatabaseHisto(imgpath)
-     self.indexDatabaseGlobalColor(imgpath)
-     self.indexDatabaseColorLayout(imgpath)
+  def indexDatabaseAll(self,videosdir='videos/'):
+     self.indexColorLayout(videosdir)
+
          
-  def indexDatabaseHisto(self,imgpath='images/'):
-   imagespath=imgpath
-   images= os.listdir(imagespath)
-   indexHisto={}
-   a=CBIR(HistoBins=10)
+  def indexColorLayout(self,videosdir="videos"):
+           
+   videospaths=os.listdir(videosdir)
 
-   for image in images:
-     fullimgpath=imagespath+'/'+image
-     img=cv2.imread(fullimgpath)
-     histogram=a.CalculateHistogram(img)
-     indexHisto[fullimgpath]=histogram
-     
-   with open(self.HistoFeaturesDB, 'wb') as f:
-    pickle.dump(indexHisto, f, protocol=pickle.HIGHEST_PROTOCOL)
-       
-   
-  def indexDatabaseGlobalColor(self,imgpath='images/'):
-   imagespath=imgpath
-   images= os.listdir(imagespath)
-   indexGlobal={}
-
-   for image in images:
-     fullimgpath=imagespath+'/'+image
-     img=cv2.imread(fullimgpath)
-     imgglobalColor=CBIR.get_global_color(img)
-     indexGlobal[fullimgpath]=imgglobalColor
-     
-   with open( self.GlobalColorFeaturesDB , 'wb') as f:
-    pickle.dump(indexGlobal, f, protocol=pickle.HIGHEST_PROTOCOL)
-      
-  def indexDatabaseColorLayout(self,imgpath='images/'):
-   imagespath=imgpath
-   images= os.listdir(imagespath)
    indexColorLayout={}
+   keyframeSavePath="TempKF"
+   videosdir=os.path.abspath(videosdir)
+   for videopath in videospaths:
+         
+     if(videopath=="Thumbnails"):
+                continue
+           
+     fullvidpath=os.path.join(videosdir,videopath)
+     
+     generateThumbnail(fullvidpath)
 
-   for image in images:
-     fullimgpath=imagespath+'/'+image
-     img=cv2.imread(fullimgpath)
-     imgcolorlayout=CBIR.get_color_layout(img)
-     indexColorLayout[fullimgpath]=imgcolorlayout
+     CBVR.ExtractKeyFrames(fullvidpath,keyframeSavePath)
+     
+     indexColorLayout[fullvidpath]=[]
+     
+     for kfname in os.listdir(keyframeSavePath):
+        image= cv2.imread(os.path.join(keyframeSavePath,kfname))           
+        bq,gq,rq=(CBIR.get_color_layout(image))
+        
+        indexColorLayout[fullvidpath].append(bq)
+        indexColorLayout[fullvidpath].append(gq)
+        indexColorLayout[fullvidpath].append(gq)
+
+        
+     print("Indexed",fullvidpath) 
+     print("#KF:",len(indexColorLayout[fullvidpath])/3 )   #3 x number of key  frames                                      
      
    with open(self.ColorLayoutFeaturesDB, 'wb') as f:
     pickle.dump(indexColorLayout, f, protocol=pickle.HIGHEST_PROTOCOL)
+
     
-  
     
 class CBIR:
 
@@ -184,13 +161,11 @@ class CBIR:
    resultimages=dict(sorted(MatchingImages.items(), key=lambda item: item[1]) )    
    ImgBrowser(resultimages)
 
-
-
  def FindMatches_Layout():
    queryimg = cv2.imread(queryimgpath)
    bq,gq,rq=CBIR.get_color_layout(queryimg)
    
-   DB=ImgFeaturesDatabase()
+   DB=VidFeaturesDatabase()
    ColorLayoutDB=DB.LoadColorLayoutDB()
    DBimages=ColorLayoutDB.keys()  
 
@@ -222,7 +197,116 @@ class CBIR:
           MatchingImages[image]=bluehit+greenhit+redhit
           
    resultimages=dict(sorted(MatchingImages.items(), key=lambda item: item[1]) )   
+
+
    ImgBrowser(resultimages)
+
+class CBVR:
+
+ def ExtractQueryKeyFrames():
+
+   queryvid=queryvidpath
+   vid=moviepy.editor.VideoFileClip(queryvid)
+   video_duration = round(int(vid.duration)/60)
+   numKF=20*video_duration
+
+   savepath="QueryKF"
+
+   if(savepath in os.listdir()):
+           shutil.rmtree(savepath)
+           
+
+   with open("VidPath.txt",'w') as f:
+              f.write(queryvid+"\n")
+              f.write(str(numKF)+"\n")
+              f.write(savepath+"\n")
+              
+   KfExtNote.set("Please Wait")
+   GUI.update()
+
+      
+   print(subprocess.getoutput(['python', "kfextractor.py"]))
+
+   LabelKfExtNote.place(x=-100,y=origy+550)
+
+   ShowError("KeyFrame Extraction Done, Saved at 'QueryKF'!","Done")
+
+   
+ def ExtractKeyFrames(videopath,savepath):
+
+   vid=moviepy.editor.VideoFileClip(videopath)
+   video_duration = round(int(vid.duration)/60)
+   numKF=5*video_duration
+
+   if(savepath in os.listdir()):
+           shutil.rmtree(savepath)
+           
+   with open("VidPath.txt",'w') as f:
+              f.write(videopath+"\n")
+              f.write(str(numKF)+"\n")
+              f.write(savepath+"\n")
+                 
+   print(subprocess.getoutput(['python', "kfextractor.py"]))
+
+   
+ def FindMatches_Layout(kfs1="QueryKF\\"):
+   kfs1="QueryKF\\"   #query keyframes folder
+
+   DB=VidFeaturesDatabase()
+   ColorLayoutDB=DB.LoadColorLayoutDB()
+
+   videospaths = list(ColorLayoutDB.keys()) 
+
+   numKF=len(ColorLayoutDB[videospaths[0]])
+   #print(numKF)
+       
+   resulltmatches=dict()
+   thres=slider.get()
+
+   for videoNumber in range(len(videospaths)): #loop over videos indexed in DB
+              
+    numKF=int(len(ColorLayoutDB[videospaths[videoNumber]])/3)  # 3adad el keyframes lel video da
+       
+    matches=0                      
+    for kfq in os.listdir(kfs1): #loop over query video key frames
+        image= cv2.imread(kfs1+kfq)           
+        bq,gq,rq=(CBIR.get_color_layout(image))
+        
+        for kfnum in range(numKF): #loop over DBVideo Keyframes, geeb bi,gi,ri, then compare with query video key frame
+                  
+            bi=ColorLayoutDB[videospaths[videoNumber]][kfnum]
+            gi=ColorLayoutDB[videospaths[videoNumber]][kfnum+1]
+            ri=ColorLayoutDB[videospaths[videoNumber]][kfnum+2]
+                          
+            bdiff=np.abs(bq-bi)
+            gdiff=np.abs(gq-gi)
+            rdiff=np.abs(rq-ri)
+       
+            bdiff[bdiff<30]=1
+            bdiff[bdiff>=30]=0
+       
+            gdiff[gdiff<30]=1
+            gdiff[gdiff>=30]=0
+       
+            rdiff[rdiff<30]=1
+            rdiff[rdiff>=30]=0
+       
+            bluehit=np.sum(bdiff)
+            greenhit=np.sum(gdiff)
+            redhit=np.sum(rdiff)
+  
+            if(bluehit>=thres and greenhit>=thres and redhit>=thres):
+                matches+=1
+                break
+                
+    if(matches>=3): ###########################################################################################################
+             resulltmatches[videospaths[videoNumber]]=matches
+
+             
+   print(resulltmatches)     
+   VidBrowser(resulltmatches)
+
+
 
 
 
@@ -243,7 +327,7 @@ def main():
     labelbanner = Label(GUI, text="Content Based Media Retrieval", font=("Arial", 28), bg='lightblue', relief="ridge", fg="White")
     labelbanner.grid(columnspan=3, padx=400, sticky='ew')
     
-    DrawCBVRScreen()
+    DrawMainScreen()
     
     GUI.mainloop()
 
@@ -266,7 +350,7 @@ def DrawCBVRScreen():
     global ButtonBack,ButtonSelectQueryImg,ButtonIndexDB
     global labelalg,LabelIndexNote
     global buttonHistoSim,buttonGlobalColor,buttonColorLayout
-    global ButtonFindMatches,ButtonExtactKF
+    global ButtonFindMatches,ButtonExtractKF
     global labelthres,labelslidernote
     global origx,origy
     global QueryImgPath
@@ -275,7 +359,7 @@ def DrawCBVRScreen():
     origx=0
     origy=-70
 
-    ButtonBack= Button(GUI, text="Back", font=("Arial", 8), command=lambda: DestroyCBIR())
+    ButtonBack= Button(GUI, text="Back", font=("Arial", 8), command=lambda: DestroyCBVR())
     ButtonBack.configure(height=2, width=8)
     ButtonBack.place(x=origx+0, y=origy+70)
                 
@@ -284,10 +368,9 @@ def DrawCBVRScreen():
     ButtonSelectQueryImg.place(x=origx+90, y=origy+120)
     
     QueryImgPath = Text(GUI, height=2, width=40)
-
     
-    ButtonExtactKF = Button(GUI, text="Extract KeyFrames",bg="lightblue", font=("Arial", 12), command=lambda: ExtractQueryKeyFrames())
-    ButtonExtactKF.configure(height=2, width=16)
+    ButtonExtractKF = Button(GUI, text="Extract KeyFrames",bg="lightblue", font=("Arial", 12), command=lambda: CBVR.ExtractQueryKeyFrames())
+    ButtonExtractKF.configure(height=2, width=16)
 
     global KfExtNote
     KfExtNote=StringVar()
@@ -297,23 +380,17 @@ def DrawCBVRScreen():
     KfExtNote.set("Extract Query Video Key Frames")
 
 
-    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: FindMatchesCBVR())
+    ButtonFindMatches = Button(GUI, text="Find Matches",bg="lightgreen", font=("Arial", 12), command=lambda: ChooseCBVR_Algo())
     ButtonFindMatches.configure(height=2, width=16)
     
 #########################################################
-    global CBIR_alg
-    CBIR_alg = IntVar()
+    global CBVR_alg
+    CBVR_alg = IntVar()
     labelalg = Label(GUI, text="Choose Algorithm:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
     labelalg.place(x=origx+500, y=origy+120)
-    
-    buttonHistoSim = Radiobutton(GUI, text="Color Histogram", variable=CBIR_alg, value=1, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
-    buttonHistoSim.place(x=origx+400, y=origy+160)
-    
-    buttonGlobalColor = Radiobutton(GUI, text="Mean Color", variable=CBIR_alg, value=2, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
-    buttonGlobalColor.place(x=origx+600, y=origy+160)
-    
-    buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBIR_alg, value=3, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThres())
-    buttonColorLayout.place(x=origx+750, y=origy+160)
+       
+    buttonColorLayout = Radiobutton(GUI, text="Color Layout", variable=CBVR_alg, value=3, bg="#d2d2d2", font=("Arial", 14),command=lambda:AutoThresCBVR())
+    buttonColorLayout.place(x=origx+450, y=origy+160)
     
     
     labelthres = Label(GUI, text="Set Threshold:", bg="LightBlue", fg="white", font=("Times", 16), width=15, relief="ridge")
@@ -338,199 +415,52 @@ def DrawCBVRScreen():
     IndexNote.set("Select Videos Path")
 
     
-def FindMatchesCBVR():
-   kfs1="QueryKF\\"
-   
-   with open("VidesColorLayout.DB", 'rb') as f:
-       ColorLayoutDB = pickle.load(f)
-
-   videospaths = list(ColorLayoutDB.keys()) 
-
-   numKF=len(ColorLayoutDB[videospaths[0]])
-   print(numKF)
-       
-   resulltmatches=dict()
-
-   for videoNumber in range(len(videospaths)): #loop over videos indexed in DB
-              
-    numKF=int(len(ColorLayoutDB[videospaths[videoNumber]])/3)  # 3adad el keyframes lel video da
-       
-    matches=0                      
-    for kfq in os.listdir(kfs1): #loop over query video key frames
-        image= cv2.imread(kfs1+kfq)           
-        bq,gq,rq=(CBIR.get_color_layout(image))     
-        for kfnum in range(numKF): #loop over DBVideo Keyframes, geeb bi,gi,ri, then compare with query video key frame
-                  
-            bi=ColorLayoutDB[videospaths[videoNumber]][kfnum]
-            gi=ColorLayoutDB[videospaths[videoNumber]][kfnum+1]
-            ri=ColorLayoutDB[videospaths[videoNumber]][kfnum+2]
-                          
-            bdiff=np.abs(bq-bi)
-            gdiff=np.abs(gq-gi)
-            rdiff=np.abs(rq-ri)
-       
-            bdiff[bdiff<30]=1
-            bdiff[bdiff>=30]=0
-       
-            gdiff[gdiff<30]=1
-            gdiff[gdiff>=30]=0
-       
-            rdiff[rdiff<30]=1
-            rdiff[rdiff>=30]=0
-       
-            bluehit=np.sum(bdiff)
-            greenhit=np.sum(gdiff)
-            redhit=np.sum(rdiff)
+def ChooseCBVR_Algo():
+   if(CBVR_alg.get()==1):
+       CBVR.FindMatches_Histo()
+   if(CBVR_alg.get()==2):
+       CBVR.FindMatches_Global()
+   if(CBVR_alg.get()==3):
+       CBVR.FindMatches_Layout()
+   else:
+       ShowError("Please Choose Algorithm!")   
   
-            if(bluehit>=40 and greenhit>=40 and redhit>=40):
-                matches+=1
-             
-    if(matches>=5):
-           resulltmatches[videospaths[videoNumber]]=matches    
-         # MatchingImages[image]=bluehit+greenhit+redhit
-         
-   VidBrowser(resulltmatches)
-   
-   
-   #resultimages=dict(sorted(MatchingImages.items(), key=lambda item: item[1]) )
-         
-def IndexAllVideos(videosdir="videos"):
-           
-   videospaths=os.listdir(videosdir)
-   #videospaths="dog.mp4"
-  # print(videospaths)
-
-   indexColorLayout={}
-   keyframeSavePath="TempKF"
-   videosdir=os.path.abspath(videosdir)
-   for videopath in videospaths:
-         
-     if(videopath=="Thumbnails"):
-                continue
-           
-     fullvidpath=os.path.join(videosdir,videopath)
-     
-     generateThumbnail(fullvidpath)
-
-     ExtractKeyFrames(fullvidpath,keyframeSavePath)
-     
-     indexColorLayout[fullvidpath]=[]
-     
-     for kfname in os.listdir(keyframeSavePath):
-        image= cv2.imread(os.path.join(keyframeSavePath,kfname))           
-        bq,gq,rq=(CBIR.get_color_layout(image))
-       # print(bq,gq,rq)
-       
-        indexColorLayout[fullvidpath].append(bq)
-        indexColorLayout[fullvidpath].append(gq)
-        indexColorLayout[fullvidpath].append(gq)
-
-        
-     print("Indexed",fullvidpath) 
-     print("#KF:",len(indexColorLayout[fullvidpath])/3 )   #3 x number of key  frames
-                                         ###################################################
-     
-   with open("VidesColorLayout.DB", 'wb') as f:
-    pickle.dump(indexColorLayout, f, protocol=pickle.HIGHEST_PROTOCOL)
-    
-  
-def ExtractKeyFrames(videopath,savepath):
-
-   vid=moviepy.editor.VideoFileClip(videopath)
-   video_duration = round(int(vid.duration)/60)
-   numKF=5*video_duration
-
-   if(savepath in os.listdir()):
-           shutil.rmtree(savepath)
-           
-   with open("VidPath.txt",'w') as f:
-              f.write(videopath+"\n")
-              f.write(str(numKF)+"\n")
-              f.write(savepath+"\n")
-                 
-   print(subprocess.getoutput(['python', "kfextractor.py"]))
-
- #  ShowError("KeyFrame Extraction Done, Saved at 'QueryKF'!","Done")
-
              
    
-def ExtractQueryKeyFrames():
 
-   queryvid=queryvidpath
-   vid=moviepy.editor.VideoFileClip(queryvid)
-   video_duration = round(int(vid.duration)/60)
-   numKF=5*video_duration
-
-   savepath="QueryKF"
-
-   if(savepath in os.listdir()):
-           shutil.rmtree(savepath)
-           
-
-   with open("VidPath.txt",'w') as f:
-              f.write(queryvid+"\n")
-              f.write(str(numKF)+"\n")
-              f.write(savepath+"\n")
-              
-   KfExtNote.set("Please Wait")
-   GUI.update()
-
-      
-   print(subprocess.getoutput(['python', "kfextractor.py"]))
-
-   LabelKfExtNote.place(x=-100,y=origy+550)
-
-   ShowError("KeyFrame Extraction Done, Saved at 'QueryKF'!","Done")
-   
    
 
 
-def AutoThres():
-   global slider 
-
+def AutoThresCBVR(): #ui slider
+   global slider
+   
    try:
        slider.destroy()
    except:
        pass
     
-   if(CBIR_alg.get()==1):
+   if(CBVR_alg.get()==1):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
        slider.set(22)
        slidernote.set('minimum distance')
 
-   if(CBIR_alg.get()==2):
+   if(CBVR_alg.get()==2):
        slider=Scale(GUI,from_=0,to=255,orient=HORIZONTAL)       
        slider.set(30)
        slidernote.set('mean color difference')
        
-   if(CBIR_alg.get()==3):
+   if(CBVR_alg.get()==3):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
-       slider.set(20)
-       slidernote.set('number of matching sub blocks')
+       slider.set(55)
+       slidernote.set('number of matching sub blocks per keyframe')
 
    labelthres.place(x=origx+500, y=origy+250)
    
    slider.place(x=origx+540, y=origy+290)
 
 
-def ChooseCBVR_Algo():
- 
-  matchedThumbs=[]
-  a=1
-  vidsNames=os.listdir(VidsPath)
-  i=0
-  for vidName in vidsNames:
-   if(vidName!="thumbnails"):
-     matchedThumbs.append(VidsPath+"\\thumbnails\\"+vidName+".png")
-     i+=1
-  
-  print(matchedThumbs)
-  ImgBrowser(matchedThumbs)
-
-  
-#compareVideos(1,"videos")
-           
-def SelectQueryVid(): 
+             
+def SelectQueryVid():  ##UI load query img
     error = 0
     global queryvidpath
     queryvidpath = filedialog.askopenfilenames()
@@ -556,7 +486,7 @@ def SelectQueryVid():
         LabelKfExtNote.place(x=origx+250,y=origy+560)
         KfExtNote.set("Extract Query Video Key Frames")
 
-        ButtonExtactKF.place(x=origx+90,y=origy+550)
+        ButtonExtractKF.place(x=origx+90,y=origy+550)
 
         
         ButtonFindMatches.place(x=origx+90, y=origy+620)
@@ -567,7 +497,7 @@ def SelectQueryVid():
 
         
 
-def SelectVideosPath(): 
+def SelectVideosPath(): ##UI indexing
     error = 0
     try:
        vidspath = filedialog.askdirectory()
@@ -577,20 +507,12 @@ def SelectVideosPath():
     if (error == 0 and len(vidspath)!=0):
         IndexNote.set("Indexing Videos,Please Wait...")
         GUI.update()
-        IndexAllVideos(vidspath)
+        DB=VidFeaturesDatabase()
+        DB.indexDatabaseAll(vidspath)
         IndexNote.set("Select Videos Path")
         ShowError("Video Indexing Done, Features Database Saved!","Done")
                    
         
-def ChooseCBIR_Algo():
-   if(CBIR_alg.get()==1):
-       CBIR.FindMatches_Histo()
-   if(CBIR_alg.get()==2):
-       CBIR.FindMatches_Global()
-   if(CBIR_alg.get()==3):
-       CBIR.FindMatches_Layout()
-   else:
-       ShowError("Please Choose Algorithm!")
 
 def generateThumbnail(videoFullPath):         
   directory,vidName=os.path.split(videoFullPath)
@@ -612,57 +534,15 @@ def generateThumbnail(videoFullPath):
   #print(ret)
   return(thumbFullPath)
 
-#IndexAllVideos("vvv2")     
-
 
 def formatPath(path):
  return path.replace("\\","\\\\")
       
 
 ##########################
-##########################
-
-def DestroyMain():
-  
-    try:
-       ButtonCBIR.destroy()
-       ButtonCBVR.destroy()
-    except:
-        pass
-
-
-    global labelthres,labelnote
-    global LabelIndexNote
+#########################
 
     
-def DestroyCBIR():
-    try:
-       ButtonBack.destroy()
-       ButtonSelectQueryImg.destroy()
-       ButtonIndexDB.destroy()
-       labelalg.destroy()
-       LabelIndexNote.destroy()
-       buttonHistoSim.destroy()
-       buttonGlobalColor.destroy()
-       buttonColorLayout.destroy()             
-    except:
-        pass
-    try:
-      QueryImgPath.destroy()
-      ButtonFindMatches.destroy()
-      labelqueryimg.destroy() 
-    except:
-        pass
-    try:
-        labelthres.destroy()
-        labelslidernote.destroy()
-        slider.destroy()
-    except:
-        pass
-    DrawMainScreen()
-
-
-        
 def VidBrowser(resultVideos):
           
         global imgbrowser
@@ -678,7 +558,7 @@ def VidBrowser(resultVideos):
            thumbName=vidName+".png"
            thumbFullPath=os.path.join(thumbdir,thumbName)
            resultThumbs.append(thumbFullPath)
-        print(resultThumbs)
+       # print(resultThumbs)
         
         imgbrowser =  Toplevel(GUI)
         imgbrowser.geometry("850x620")
@@ -863,6 +743,72 @@ def openVideo(thumbnailPath): #openVideoFromThumbNail full path
     
 ##########################
 ##########################
+def DestroyMain():
+  
+    try:
+       ButtonCBIR.destroy()
+       ButtonCBVR.destroy()
+    except:
+        pass
+
+
+    global labelthres,labelnote
+    global LabelIndexNote
+
+    
+def DestroyCBIR():
+    try:
+       ButtonBack.destroy()
+       ButtonSelectQueryImg.destroy()
+       ButtonIndexDB.destroy()
+       labelalg.destroy()
+       LabelIndexNote.destroy()
+       buttonHistoSim.destroy()
+       buttonGlobalColor.destroy()
+       buttonColorLayout.destroy()             
+    except:
+        pass
+    try:
+      QueryImgPath.destroy()
+      ButtonFindMatches.destroy()
+      labelqueryimg.destroy() 
+    except:
+        pass
+    try:
+        labelthres.destroy()
+        labelslidernote.destroy()
+        slider.destroy()
+    except:
+        pass
+    DrawMainScreen()
+
+
+def DestroyCBVR():
+    try:
+       ButtonBack.destroy()
+       ButtonSelectQueryImg.destroy()
+       ButtonIndexDB.destroy()
+       labelalg.destroy()
+       LabelIndexNote.destroy()
+       buttonColorLayout.destroy()             
+    except:
+        pass
+    try:
+      QueryImgPath.destroy()
+      LabelKfExtNote.destroy()
+      ButtonExtractKF.destroy()
+      ButtonFindMatches.destroy()
+      labelqueryimg.destroy() 
+    except:
+        pass
+    try:
+        labelthres.destroy()
+        labelslidernote.destroy()
+        slider.destroy()
+    except:
+        pass
+    DrawMainScreen()
+    
 
 class FullScreenApp(object):
     def __init__(self, master, **kwargs):
