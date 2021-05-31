@@ -121,7 +121,7 @@ class VidFeaturesDatabase:
      
      generateThumbnail(fullvidpath)
 
-     CBVR.ExtractKeyFrames(fullvidpath,keyframeSavePath)
+     CBVR.ExtractKeyFrames(fullvidpath,keyframeSavePath)   # ************ {Videopath:[[][][][][][][][][]]}
      
      indexColorLayout[fullvidpath]=[]
      
@@ -479,7 +479,7 @@ def DrawCBIRScreen():
     global IndexNote
     IndexNote=StringVar()
     
-    LabelIndexNote= Label(GUI,textvariable=IndexNote,bg="#d2d2d2",fg="red",font=("Times", 14))
+    LabelIndexNote= Label(GUI,textvariable=IndexNote,bg="#d2d2d2",fg="blue",font=("Times", 14))
     LabelIndexNote.place(x=origx+1050,y=origy+170)
 
     IndexNote.set("Select Images Path")
@@ -599,14 +599,14 @@ def ImgBrowser(resultimages):
         lenn=len(images)
         
         LABEL_BG = "#ccc"  # Light gray.
-        ROWS, COLS = int(lenn/4)+2, 8  # Size of grid.
+        ROWS, COLS = int(lenn/4)*2+2, 8  # Size of grid.
         ROWS_DISP = 3  # Number of rows to display.
         COLS_DISP = 8  # Number of columns to display
         
         btnopen=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
         btnexport=  [[0 for x in range(COLS)] for y in range(ROWS*2)]
         
-        r+=1
+        #r+=1
         files=[]
         for number in range(0,lenn):
       
@@ -721,7 +721,7 @@ def DrawCBVRScreen():
     global IndexNote
     IndexNote=StringVar()
     
-    LabelIndexNote= Label(GUI,textvariable=IndexNote,bg="#d2d2d2",fg="red",font=("Times", 14))
+    LabelIndexNote= Label(GUI,textvariable=IndexNote,bg="#d2d2d2",fg="blue",font=("Times", 14))
     LabelIndexNote.place(x=origx+1050,y=origy+170)
 
     IndexNote.set("Select Videos Path")
@@ -776,6 +776,11 @@ def SelectQueryVid():  ##UI load query img
         error=1
         
     global labelqueryimg
+
+    try:
+        labelqueryimg.destroy()
+    except:
+               pass
 
    # print(queryvidpath)
     thumbFullPath=generateThumbnail(queryvidpath)
