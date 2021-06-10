@@ -1,6 +1,6 @@
 # Content-Based-Media-Retrieval  
 ## to run project, make sure you have Python 3.x installed with following dpendencies   
-``` tkinter:    
+` tkinter:    
    pip install tk   
 matplotlib:       
    pip install matplotlib   
@@ -17,11 +17,12 @@ opencv:
 moviepiy:      
     pip install moviepy        
 katna:       
-    pip install katna``  `   
+    pip install katna   
+    `     
 
 
 ## to run code:
-Download the repository and run ```app.py```   
+Download the repository and run `app.py`
 
 ## to compile into single executable:   
- ```$ pyinstaller --onefile app.y   ```
+ `$ pyinstaller --onefile app.y   `
