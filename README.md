@@ -1,9 +1,9 @@
 # Content-Based-Media-Retrieval  
 ## to run project, make sure you have Python 3.x installed with following dpendencies   
 tkinter:    
-  ` pip install tk   `
+  ` pip install tk   `       
 matplotlib:       
- `  pip install matplotlib     `  
+ `  pip install matplotlib     `       
 pillow:   
   ` pip install Pillow==2.2.2    `    
 shutil:   
