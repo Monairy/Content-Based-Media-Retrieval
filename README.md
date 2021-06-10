@@ -3,6 +3,7 @@ to run project, make sure you have Python 3.x installed with following dpendenci
 tkinter: 
 $pip install tk
 matplotlib:
+
    pip install matplotlib
 pillow:
    pip install Pillow==2.2.2
