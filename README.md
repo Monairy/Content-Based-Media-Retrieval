@@ -20,7 +20,8 @@ katna:
     pip install katna   
 
 
-## to run code just download the repository and run app.py   
+## to run code:
+Download the repository and run ```app.py```   
 
 ## to compile into single executable:   
  $ pyinstaller --onefile app.y   
