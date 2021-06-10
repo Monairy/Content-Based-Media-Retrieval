@@ -1,5 +1,5 @@
 # Content-Based-Media-Retrieval  
-## to run project, make sure you have Python 3.x installed with following dpendencies   
+## To run project, make sure you have Python 3.x installed with following dpendencies   
 tkinter:    
   ` pip install tk   `       
 matplotlib:       
