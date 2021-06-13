@@ -290,7 +290,10 @@ class CBVR:
    queryvid=queryvidpath
    vid=moviepy.editor.VideoFileClip(queryvid)
    video_duration = round(int(vid.duration)/60)
-   numKF=20*video_duration
+   numKF=10*video_duration
+
+   if(numKF==0):
+     numKF=10
 
    savepath="QueryKF"
 
@@ -318,7 +321,10 @@ class CBVR:
 
    vid=moviepy.editor.VideoFileClip(videopath)
    video_duration = round(int(vid.duration)/60)
-   numKF=5*video_duration
+   numKF=10*video_duration
+   
+   if(numKF==0):
+      numKF=10
 
    if(savepath in os.listdir()):
            shutil.rmtree(savepath)
@@ -380,8 +386,9 @@ class CBVR:
             if(bluehit>=thres and greenhit>=thres and redhit>=thres):
                 matches+=1
                 break
-                
-    if(matches>=3): ###########################################################################################################
+              
+    numMatchKF=slidernumKF.get()            
+    if(matches>=numMatchKF): ###########################################################################################################
              resulltmatches[videospaths[videoNumber]]=matches
 
              
@@ -505,12 +512,12 @@ def AutoThres():
    if(CBIR_alg.get()==1):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
        slider.set(22)
-       slidernote.set('minimum distance')
+       slidernote.set('minimum similarity')
 
    if(CBIR_alg.get()==2):
        slider=Scale(GUI,from_=0,to=255,orient=HORIZONTAL)       
        slider.set(30)
-       slidernote.set('mean color difference')
+       slidernote.set('minimum color difference')
        
    if(CBIR_alg.get()==3):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
@@ -678,7 +685,7 @@ def DrawCBVRScreen():
     global labelalg,LabelIndexNote
     global buttonHistoSim,buttonGlobalColor,buttonColorLayout
     global ButtonFindMatches,ButtonExtractKF
-    global labelthres,labelslidernote
+    global labelthres,labelslidernote,labelKFslidernote
     global origx,origy
     global QueryImgPath
     global LabelIndexNote,LabelKfExtNote
@@ -727,6 +734,12 @@ def DrawCBVRScreen():
     
     labelslidernote= Label(GUI,textvariable=slidernote,bg="#d2d2d2",fg="red",font=("Times", 14))
     labelslidernote.place(x=origx+650,y=origy+300)
+
+    global slidernumKFnote
+    slidernumKFnote=StringVar()
+
+    labelKFslidernote= Label(GUI,textvariable=slidernumKFnote,bg="#d2d2d2",fg="red",font=("Times", 14))
+    labelKFslidernote.place(x=origx+650,y=origy+340)    
        
 #########################################################
     ButtonIndexDB = Button(GUI, text="Index Database", font=("Arial", 12), command=lambda: SelectVideosPath())
@@ -755,9 +768,11 @@ def ChooseCBVR_Algo():
 
 def AutoThresCBVR(): #ui slider
    global slider
+   global slidernumKF
    
    try:
        slider.destroy()
+       slidernumKF.destroy()
    except:
        pass
     
@@ -776,9 +791,14 @@ def AutoThresCBVR(): #ui slider
        slider.set(55)
        slidernote.set('number of matching sub blocks per keyframe')
 
+       slidernumKF=Scale(GUI,from_=0,to=10,orient=HORIZONTAL)       
+       slidernumKF.set(3)
+       slidernumKFnote.set('number of matching keyframes')
+
    labelthres.place(x=origx+500, y=origy+250)
    
    slider.place(x=origx+540, y=origy+290)
+   slidernumKF.place(x=origx+540,y=origy+330)
 
              
 def SelectQueryVid():  ##UI load query img
@@ -1127,6 +1147,8 @@ def DestroyCBVR():
         labelthres.destroy()
         labelslidernote.destroy()
         slider.destroy()
+        labelKFslidernote.destroy()
+        slidernumKF.destroy()
     except:
         pass
     DrawMainScreen()
