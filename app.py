@@ -121,6 +121,7 @@ class VidFeaturesDatabase:
    indexColorLayout={}
    keyframeSavePath="TempKF"
    videosdir=os.path.abspath(videosdir)
+ 
    for videopath in videospaths:
          
      if(videopath=="Thumbnails"):
@@ -129,9 +130,11 @@ class VidFeaturesDatabase:
      fullvidpath=os.path.join(videosdir,videopath)
      
      generateThumbnail(fullvidpath)
-
-     CBVR.ExtractKeyFrames(fullvidpath,keyframeSavePath)   # ************ {Videopath:[[][][][][][][][][]]}
-     
+     try:
+         CBVR.ExtractKeyFrames(fullvidpath,keyframeSavePath)   # ************ {Videopath:[[][][][][][][][][]]}
+     except:
+       continue
+        
      indexColorLayout[fullvidpath]=[]
      
      for kfname in os.listdir(keyframeSavePath):
@@ -285,6 +288,13 @@ class CBIR:
 
 class CBVR:
 
+ def extractkeyframes(videopath,num_KF,SavePath="tempKF"):
+  vd = Video()
+  numberOFKeyFrames = num_KF
+  diskwriter = KeyFrameDiskWriter(location=SavePath)
+  KeyFrames = vd._extract_keyframes_from_video(numberOFKeyFrames, videopath) 
+  diskwriter.write(videopath, KeyFrames)
+
  def ExtractQueryKeyFrames():
 
    queryvid=queryvidpath
@@ -300,17 +310,12 @@ class CBVR:
    if(savepath in os.listdir()):
            shutil.rmtree(savepath)
            
-
-   with open("VidPath.txt",'w') as f:
-              f.write(queryvid+"\n")
-              f.write(str(numKF)+"\n")
-              f.write(savepath+"\n")
               
    KfExtNote.set("Please Wait")
    GUI.update()
 
-      
-   print(subprocess.getoutput(['python', "kfextractor.py"]))
+   CBVR.extractkeyframes(queryvid,numKF,savepath)   
+  # print(subprocess.getoutput(['python', "kfextractor.py"]))
 
    LabelKfExtNote.place(x=-100,y=origy+550)
 
@@ -328,13 +333,10 @@ class CBVR:
 
    if(savepath in os.listdir()):
            shutil.rmtree(savepath)
-           
-   with open("VidPath.txt",'w') as f:
-              f.write(videopath+"\n")
-              f.write(str(numKF)+"\n")
-              f.write(savepath+"\n")
                  
-   print(subprocess.getoutput(['python', "kfextractor.py"]))
+  # print(subprocess.getoutput(['python', "kfextractor.py"]))
+   CBVR.extractkeyframes(videopath,numKF,savepath)   
+
 
    
  def FindMatches_Layout(kfs1="QueryKF\\"):
@@ -362,22 +364,22 @@ class CBVR:
         
         for kfnum in range(numKF): #loop over DBVideo Keyframes, geeb bi,gi,ri, then compare with query video key frame
                   
-            bi=ColorLayoutDB[videospaths[videoNumber]][kfnum]
-            gi=ColorLayoutDB[videospaths[videoNumber]][kfnum+1]
-            ri=ColorLayoutDB[videospaths[videoNumber]][kfnum+2]
+            bi=ColorLayoutDB[videospaths[videoNumber]][kfnum*3]
+            gi=ColorLayoutDB[videospaths[videoNumber]][(kfnum*3)+1]
+            ri=ColorLayoutDB[videospaths[videoNumber]][(kfnum*3)+2]
                           
             bdiff=np.abs(bq-bi)
             gdiff=np.abs(gq-gi)
             rdiff=np.abs(rq-ri)
        
-            bdiff[bdiff<30]=1
-            bdiff[bdiff>=30]=0
+            bdiff[bdiff<40]=1
+            bdiff[bdiff>=40]=0
        
-            gdiff[gdiff<30]=1
-            gdiff[gdiff>=30]=0
+            gdiff[gdiff<40]=1
+            gdiff[gdiff>=40]=0
        
-            rdiff[rdiff<30]=1
-            rdiff[rdiff>=30]=0
+            rdiff[rdiff<40]=1
+            rdiff[rdiff>=40]=0
        
             bluehit=np.sum(bdiff)
             greenhit=np.sum(gdiff)
@@ -788,11 +790,11 @@ def AutoThresCBVR(): #ui slider
        
    if(CBVR_alg.get()==3):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
-       slider.set(55)
+       slider.set(40)
        slidernote.set('number of matching sub blocks per keyframe')
 
        slidernumKF=Scale(GUI,from_=0,to=10,orient=HORIZONTAL)       
-       slidernumKF.set(3)
+       slidernumKF.set(5)
        slidernumKFnote.set('number of matching keyframes')
 
    labelthres.place(x=origx+500, y=origy+250)
@@ -1171,7 +1173,8 @@ class FullScreenApp(object):
 
 #FindMatchesCBVR()
 try:
-   main()
+  if __name__ == "__main__":
+      main()
 except:
    ShowError("Error Happened, Please Check Your Inputs!")
 
