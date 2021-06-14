@@ -24,4 +24,4 @@ katna:
 Download the repository and run `app.py`
 
 ## to compile into single executable:   
- `$ pyinstaller --onefile app.y   `
+ `$ pyinstaller -F --hidden-import="sklearn.utils._cython_blas" --hidden-import="sklearn.neighbors.typedefs" --hidden-import="sklearn.neighbors.quad_tree" --hidden-import="sklearn.tree._utils" --hidden-import="sklearn.utils._weight_vector" --hidden-import="scipy.special.cython_special" --hidden-import="skimage.filters.rank.core_cy_3d" --onefile app.py   `
