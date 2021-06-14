@@ -10,7 +10,8 @@ import numpy as np
 import pickle
 from shutil import copyfile
 import subprocess
-import moviepy.editor
+#import moviepy.editor
+from moviepy.editor import VideoFileClip
 from Katna.video import Video
 from Katna.writer import KeyFrameDiskWriter
 
@@ -90,13 +91,17 @@ class ImgFeaturesDatabase:
      fullimgpath=os.path.join(imagespath,image)
      img=cv2.imread(fullimgpath)
      try:
-        imgcolorlayout=CBIR.get_color_layout(img)
-        indexColorLayout[fullimgpath]=imgcolorlayout
+        b,g,r=CBIR.get_color_layout(img)
+        #print(b,g,r)
+        indexColorLayout[fullimgpath]=b,g,r
      except:
        continue
-     
+   #print(indexColorLayout)  
    with open(self.ColorLayoutFeaturesDB, 'wb') as f:
     pickle.dump(indexColorLayout, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
     
 class VidFeaturesDatabase:
 
@@ -140,10 +145,11 @@ class VidFeaturesDatabase:
      for kfname in os.listdir(keyframeSavePath):
         image= cv2.imread(os.path.join(keyframeSavePath,kfname))           
         bq,gq,rq=(CBIR.get_color_layout(image))
+       # print(bq,gq,rq,"\n")
         
         indexColorLayout[fullvidpath].append(bq)
         indexColorLayout[fullvidpath].append(gq)
-        indexColorLayout[fullvidpath].append(gq)
+        indexColorLayout[fullvidpath].append(rq)
 
         
      print("Indexed",fullvidpath) 
@@ -189,12 +195,14 @@ class CBIR:
     red = np.zeros((10,10))
     res1 = new_size.shape[0] // 50
     res2 = new_size.shape[1] //50
+  #  print(new_size.shape)
+    
     for i in range(res1):
         for j in range(res2):
-            blue[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,0])
-            green[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,1])
-            red[i,j] = np.mean(new_size[(i*grid):(i*grid)+grid,(j*grid):(j*grid) + grid,2])
-
+            blue[i,j]  =  np.mean( new_size[ (i*grid) : (i*grid)+grid, (j*grid) : (j*grid) + grid, 0] )
+            green[i,j] =  np.mean( new_size[ (i*grid) : (i*grid)+grid, (j*grid) : (j*grid) + grid, 1] )
+            red[i,j]   =  np.mean( new_size[ (i*grid) : (i*grid)+grid, (j*grid) : (j*grid) + grid, 2] )
+    #print(blue,green,red)
     return blue,green,red
 
     
@@ -298,7 +306,7 @@ class CBVR:
  def ExtractQueryKeyFrames():
 
    queryvid=queryvidpath
-   vid=moviepy.editor.VideoFileClip(queryvid)
+   vid=VideoFileClip(queryvid)
    video_duration = round(int(vid.duration)/60)
    numKF=10*video_duration
 
@@ -324,7 +332,7 @@ class CBVR:
    
  def ExtractKeyFrames(videopath,savepath):
 
-   vid=moviepy.editor.VideoFileClip(videopath)
+   vid=VideoFileClip(videopath)
    video_duration = round(int(vid.duration)/60)
    numKF=10*video_duration
    
@@ -367,6 +375,7 @@ class CBVR:
             bi=ColorLayoutDB[videospaths[videoNumber]][kfnum*3]
             gi=ColorLayoutDB[videospaths[videoNumber]][(kfnum*3)+1]
             ri=ColorLayoutDB[videospaths[videoNumber]][(kfnum*3)+2]
+            #print(bi,gi,ri,"\n")
                           
             bdiff=np.abs(bq-bi)
             gdiff=np.abs(gq-gi)
@@ -790,7 +799,7 @@ def AutoThresCBVR(): #ui slider
        
    if(CBVR_alg.get()==3):
        slider=Scale(GUI,from_=0,to=100,orient=HORIZONTAL)       
-       slider.set(40)
+       slider.set(50)
        slidernote.set('number of matching sub blocks per keyframe')
 
        slidernumKF=Scale(GUI,from_=0,to=10,orient=HORIZONTAL)       
