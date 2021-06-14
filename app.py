@@ -14,6 +14,7 @@ import subprocess
 from moviepy.editor import VideoFileClip
 from Katna.video import Video
 from Katna.writer import KeyFrameDiskWriter
+import multiprocessing
 
 class ImgFeaturesDatabase:
 
@@ -1180,9 +1181,11 @@ class FullScreenApp(object):
         self.master.geometry(self._geom)
         self._geom = geom
 
-#FindMatchesCBVR()
+
+
 try:
   if __name__ == "__main__":
+      multiprocessing.freeze_support()
       main()
 except:
    ShowError("Error Happened, Please Check Your Inputs!")
